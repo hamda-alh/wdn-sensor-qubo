@@ -1,4 +1,9 @@
 wntr
 networkx
 numpy
+pandas
 matplotlib
+gurobipy
+dimod
+dwave-neal
+qiskit
