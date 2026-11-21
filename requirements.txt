@@ -7,3 +7,4 @@ gurobipy
 dimod
 dwave-neal
 qiskit
+six
