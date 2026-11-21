@@ -1,9 +1,10 @@
 import json
 from datetime import datetime
-from pathlib import Path
 
 # to keep all possible solutions we would get in one place
-SOLUTIONS = Path(__file__).parent.parent / "results" / "solutions"
+# just remeber to do sys.path.append(".") if you are in /notebook or .. if somewhere else
+# otherwise just run it from the parent repo :)
+SOLUTIONS = "results/solutions"
 
 
 # save solution as a json format
@@ -51,7 +52,7 @@ def save_solution(network, solver, formulation, k, sensors, energy, runtime_s, p
         "samples": samples or [],
         "time": time,
     }
-    path = SOLUTIONS / f"{network}_{solver}_k{k}_{time}.json"
+    path = f"{SOLUTIONS}/{network}_{solver}_k{k}_{time}.json"
     with open(path, "w") as f:
         json.dump(solution, f, indent=2)
     return path
