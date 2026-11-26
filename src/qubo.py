@@ -116,3 +116,8 @@ def energy(Q, const, x):
 def to_bits(sensors, nodes):
     """turn a list of sensor junctions into 0s and 1s."""
     return [1 if n in sensors else 0 for n in nodes]
+
+
+def to_sensors(x, nodes):
+    """turn 0s and 1s back into a list of sensor junctions."""
+    return [n for n, bit in zip(nodes, x) if bit]
