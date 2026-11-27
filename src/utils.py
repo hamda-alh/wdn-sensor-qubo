@@ -1,5 +1,7 @@
 import json
 from datetime import datetime
+import matplotlib.pyplot as plt
+import wntr
 
 # to keep all possible solutions we would get in one place
 # just remeber to do sys.path.append(".") if you are in /notebook or .. if somewhere else
@@ -62,3 +64,30 @@ def load_solution(path):
     """read a saved solution back as a dictionary."""
     with open(path) as f:
         return json.load(f)
+    
+
+def plot_network(network, sensors=(), ax=None, title=None, labels=True):
+    """draw the network. junctions are dots, tanks and reservoirs are squares, sensors are stars."""
+    wn = wntr.network.WaterNetworkModel(f"networks/{network}.inp")
+    pos = {name: wn.get_node(name).coordinates for name in wn.node_name_list}
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 5))
+
+    for _, link in wn.links():
+        a, b = pos[link.start_node_name], pos[link.end_node_name]
+        ax.plot([a[0], b[0]], [a[1], b[1]], color="lightgray", zorder=1)
+
+    for name in wn.node_name_list:
+        x, y = pos[name]
+        if name in sensors:
+            ax.scatter(x, y, s=250, marker="*", color="tab:red", edgecolor="black", zorder=3)
+        elif name in wn.junction_name_list:
+            ax.scatter(x, y, s=40, color="tab:blue", zorder=2)
+        else:
+            ax.scatter(x, y, s=60, marker="s", color="gray", zorder=2)
+        if labels:
+            ax.annotate(name, (x, y), xytext=(6, 6), textcoords="offset points", fontsize=9)
+
+    ax.set_title(title or network)
+    ax.axis("off")
+    return ax
