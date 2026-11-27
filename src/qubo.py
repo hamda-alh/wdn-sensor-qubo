@@ -107,6 +107,15 @@ def build_Q_leak(network, k, penalty=5.0):
     return Q, const, nodes
 
 
+def pick_penalty(Q0):
+    """
+    penalty rule from notebooks/penalty_sweep.ipynb.
+    Q0 is the qubo built with penalty=0. its most negative diagonal entry is the biggest
+    improvement one sensor can give, and the penalty is set 10% above that.
+    """
+    return 1.1 * -Q0.diagonal().min()
+
+
 def energy(Q, const, x):
     """energy of a placement x (list of 0s and 1s)."""
     x = np.array(x)
