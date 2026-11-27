@@ -1,6 +1,10 @@
+import glob
 import json
+import os
 from datetime import datetime
+
 import matplotlib.pyplot as plt
+import pandas as pd
 import wntr
 
 # to keep all possible solutions we would get in one place
@@ -11,7 +15,8 @@ SOLUTIONS = "results/solutions"
 
 # save solution as a json format
 
-def save_solution(network, solver, formulation, k, sensors, energy, runtime_s, params=None, samples=None):
+def save_solution(network, solver, formulation, k, sensors, energy, runtime_s, params=None, samples=None,
+                  sample_energies=None):
 
 
     """
@@ -37,7 +42,10 @@ def save_solution(network, solver, formulation, k, sensors, energy, runtime_s, p
     energy       lowest energy
     runtime_s    wall clock time in seconds
     params       (optional) any settings
-    samples      (optional) all the placements the solver returned 
+    samples      (optional) all the placements the solver returned
+    sample_energies  (optional) the energy of each of those placements
+
+    running the same network, formulation, solver and k again replaces the old file.
     """
 
 
@@ -52,9 +60,11 @@ def save_solution(network, solver, formulation, k, sensors, energy, runtime_s, p
         "runtime_s": float(runtime_s),
         "params": params or {},
         "samples": samples or [],
+        "sample_energies": sample_energies or [],
         "time": time,
     }
-    path = f"{SOLUTIONS}/{network}_{solver}_k{k}_{time}.json"
+    os.makedirs(SOLUTIONS, exist_ok=True)
+    path = f"{SOLUTIONS}/{network}_{formulation}_{solver}_k{k}.json"
     with open(path, "w") as f:
         json.dump(solution, f, indent=2)
     return path
@@ -64,7 +74,13 @@ def load_solution(path):
     """read a saved solution back as a dictionary."""
     with open(path) as f:
         return json.load(f)
-    
+
+
+def load_all_solutions():
+    """every saved solution in one table, one row per solver run."""
+    paths = sorted(glob.glob(f"{SOLUTIONS}/*.json"))
+    return pd.DataFrame([load_solution(p) for p in paths])
+
 
 def plot_network(network, sensors=(), ax=None, title=None, labels=True):
     """draw the network. junctions are dots, tanks and reservoirs are squares, sensors are stars."""
