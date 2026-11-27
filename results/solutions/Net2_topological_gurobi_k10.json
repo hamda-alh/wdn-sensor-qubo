@@ -16,7 +16,7 @@
     "31"
   ],
   "energy": 4.648586751645265,
-  "runtime_s": 0.03388602699851617,
+  "runtime_s": 0.00478257198119536,
   "params": {
     "budget": "constraint",
     "n_junctions": 35,
@@ -24,5 +24,5 @@
   },
   "samples": [],
   "sample_energies": [],
-  "time": "20261127-050245"
+  "time": "20261127-225154"
 }
