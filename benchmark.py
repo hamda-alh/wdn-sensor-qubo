@@ -15,13 +15,18 @@ from src.utils import load_solution, SOLUTIONS
 BENCHMARKS = "results/benchmarks"
 
 
-def plot_delays(network, sensors, delays, path):
-    """draw the network, color each junction by how long a leak there takes to be noticed."""
+def plot_delays(network, sensors, delays, path=None, ax=None, max_minutes=None):
+    """
+    draw the network, color each junction by how long a leak there takes to be noticed.
+    give a path to save it as a file, or an ax to draw it inside another figure.
+    max_minutes caps the color scale (everything slower gets the same color).
+    """
     wn = wntr.network.WaterNetworkModel(f"networks/{network}.inp")
     x = pd.Series({name: wn.get_node(name).coordinates[0] for name in wn.node_name_list})
     y = pd.Series({name: wn.get_node(name).coordinates[1] for name in wn.node_name_list})
 
-    fig, ax = plt.subplots(figsize=(7, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 6))
     for _, link in wn.links():
         a, b = link.start_node_name, link.end_node_name
         ax.plot([x[a], x[b]], [y[a], y[b]], color="lightgray", linewidth=1, zorder=1)
@@ -29,15 +34,17 @@ def plot_delays(network, sensors, delays, path):
     missed = delays[delays.isna()].index
     caught = delays[delays.notna()].index
     ax.scatter(x[missed], y[missed], s=25, marker="x", color="gray", label="leak not detected", zorder=2)
-    dots = ax.scatter(x[caught], y[caught], s=60, c=delays[caught], cmap="Blues_r", vmin=0,
+    dots = ax.scatter(x[caught], y[caught], s=60, c=delays[caught], cmap="Blues_r", vmin=0, vmax=max_minutes,
                       edgecolor="black", label="leak detected", zorder=3)
-    ax.scatter(x[sensors], y[sensors], s=220, marker="*", color="black", label="sensor", zorder=4)
+    ax.scatter(x[sensors], y[sensors], s=220, marker="*", color="tab:red", edgecolor="black", label="sensor", zorder=4)
 
-    fig.colorbar(dots, label="minutes until detected")
+    ax.figure.colorbar(dots, ax=ax, label="minutes until detected", extend="max" if max_minutes else "neither")
     ax.legend()
     ax.axis("off")
-    fig.savefig(path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    if path:
+        ax.figure.savefig(path, dpi=150, bbox_inches="tight")
+        plt.close(ax.figure)
+    return ax
 
 
 def gurobi_energy(network, formulation, k):
