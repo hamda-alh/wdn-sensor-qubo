@@ -70,3 +70,22 @@ def solve_brute_force(Q, const):
 
     best = X[energies.argmin()].tolist()
     return best, energies.min(), runtime, [best]
+
+
+def solve_max_detection(S, k):
+    """
+    the most leaks that k sensors can detect. S[i, j] = 1 if a sensor at junction j detects leak i.
+    this is not a qubo. it is the true best answer, used as a reference line.
+    """
+    n_leaks, n_junctions = S.shape
+    model = gp.Model()
+    model.Params.OutputFlag = 0
+    x = model.addMVar(n_junctions, vtype=gp.GRB.BINARY)     # 1 if junction j has a sensor
+    y = model.addMVar(n_leaks, ub=1)                        # 1 if leak i is detected
+    model.addConstr(y <= S @ x)                             # a leak needs at least one sensor that sees it
+    model.addConstr(x.sum() == k)
+    model.setObjective(y.sum(), gp.GRB.MAXIMIZE)
+    model.optimize()
+
+    best = [int(round(v)) for v in x.X]
+    return best, int(round(model.ObjVal))
