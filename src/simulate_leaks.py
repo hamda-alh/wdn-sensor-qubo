@@ -10,8 +10,11 @@ duration = 24 * 3600
 leak_start = 3600
 timestep = 60
 threshold = 0.5          # pressure drop in meters that counts as an alarm
-leak_area = 0.0005       # m^2
 discharge_coeff = 0.75
+
+# size of the hole in m^2. Net3 is much bigger, so the same hole barely changes its pressure
+leak_areas = {"Net1": 0.0005, "Net2": 0.0005, "Net3": 0.002}
+
 noise_seed = 0
 
 
@@ -43,7 +46,7 @@ def simulate(network, leak_node=None, noisy=False):
     if noisy:
         add_noise(wn)
     if leak_node:
-        wn.get_node(leak_node).add_leak(wn, area=leak_area, discharge_coeff=discharge_coeff, start_time=leak_start)
+        wn.get_node(leak_node).add_leak(wn, area=leak_areas[network], discharge_coeff=discharge_coeff, start_time=leak_start)
     pressure = wntr.sim.WNTRSimulator(wn).run_sim().node["pressure"]
     return pressure[wn.junction_name_list]
 
