@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 
@@ -49,7 +48,8 @@ def gurobi_energy(network, formulation, k):
     return load_solution(path)["energy"]
 
 
-def benchmark(solution_path):
+def benchmark(solution_path, plot=False):
+    """score one saved solution. returns a dictionary of metrics."""
     solution = load_solution(solution_path)
     network, formulation, k, sensors = solution["network"], solution["formulation"], solution["k"], solution["sensors"]
 
@@ -84,33 +84,33 @@ def benchmark(solution_path):
         metrics["detection_rate_noisy"] = detection_rate(noisy_delays, cutoff)
         metrics["mean_delay_min_noisy"] = mean_delay(noisy_delays)
 
-    # one folder per solution
-    folder = f"{BENCHMARKS}/{name}"
-    os.makedirs(folder, exist_ok=True)
-    with open(f"{folder}/metrics.json", "w") as f:
-        json.dump(metrics, f, indent=2)
-    delays.rename("delay_min").to_csv(f"{folder}/delays.csv")
-    plot_delays(network, sensors, delays, f"{folder}/delays.png")
+    if plot:
+        os.makedirs(BENCHMARKS, exist_ok=True)
+        plot_delays(network, sensors, delays, f"{BENCHMARKS}/{name}.png")
 
     return metrics
 
 
-# python benchmark.py results/solutions/Net1_leak_sa_k3.json
-# python benchmark.py results/solutions/*.json          (everything at once)
+# python benchmark.py results/solutions/*.json                       -> one table: results/benchmarks/summary.csv
+# python benchmark.py results/solutions/Net2_leak_sa_k4.json plot     -> also saves the delay map as a png
 if __name__ == "__main__":
+    plot = "plot" in sys.argv
+    paths = [p for p in sys.argv[1:] if p != "plot"]
+
     rows = []
-    for solution_path in sys.argv[1:]:
-        metrics = benchmark(solution_path)
+    for solution_path in paths:
+        metrics = benchmark(solution_path, plot)
         rows.append(metrics)
-        for key, value in metrics.items():
-            print(f"{key:22} {value}")
-        print()
+        if len(paths) == 1:
+            for key, value in metrics.items():
+                print(f"{key:22} {value}")
 
     # one row per solution in a shared table, so runs are easy to compare
+    os.makedirs(BENCHMARKS, exist_ok=True)
     summary_path = f"{BENCHMARKS}/summary.csv"
     summary = pd.DataFrame(rows)
     if os.path.exists(summary_path):
         old = pd.read_csv(summary_path)
         summary = pd.concat([old[~old["solution"].isin(summary["solution"])], summary])
     summary.sort_values("solution").to_csv(summary_path, index=False)
-    print(f"saved {len(rows)} benchmarks, summary in {summary_path}")
+    print(f"saved {len(rows)} benchmarks in {summary_path}")
