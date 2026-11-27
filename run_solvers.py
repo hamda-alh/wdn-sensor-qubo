@@ -1,12 +1,11 @@
 import sys
 
-from src.qubo import build_Q_topological, build_Q_leak, cutoff, energy, to_sensors
+from src.qubo import build_Q_topological, build_Q_leak, pick_penalty, cutoff, energy, to_sensors
 from src.solvers import solve_gurobi, solve_sa
 from src.utils import save_solution
 
 
 # qubo settings, the same for every solver
-penalty = 5.0
 p_cost = 0.5
 
 # simulated annealing settings
@@ -23,15 +22,17 @@ def build_Q(network, formulation, k, penalty):
 
 def run(network, formulation, k):
     """run gurobi and simulated annealing on one problem and save both solutions."""
-    Q, const, nodes = build_Q(network, formulation, k, penalty)
+    # the qubo without the penalty, used by gurobi and to pick the penalty
+    Q0, const0, nodes = build_Q(network, formulation, k, penalty=0)
+    penalty = pick_penalty(Q0)
+    Q, const, _ = build_Q(network, formulation, k, penalty)
 
     # saved with every solution, so we know later what the run was based on
     info = {"n_junctions": len(nodes), "p_cost": p_cost}
     if formulation == "leak":
         info = {"n_junctions": len(nodes), "cutoff_min": cutoff}
 
-    # gurobi gets the budget as a real constraint, so its qubo has no penalty
-    Q0, const0, _ = build_Q(network, formulation, k, penalty=0)
+    # gurobi gets the budget as a real constraint, so it uses the qubo without the penalty
     x, e, runtime, _ = solve_gurobi(Q0, const0, k=k)
     save_solution(network, "gurobi", formulation, k, to_sensors(x, nodes), e, runtime,
                   params={"budget": "constraint", **info})
