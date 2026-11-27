@@ -1,0 +1,33 @@
+{
+  "network": "Net3",
+  "solver": "gurobi",
+  "formulation": "topological",
+  "k": 15,
+  "sensors": [
+    "115",
+    "119",
+    "121",
+    "159",
+    "163",
+    "169",
+    "173",
+    "183",
+    "184",
+    "193",
+    "201",
+    "207",
+    "208",
+    "211",
+    "239"
+  ],
+  "energy": 15.746939784748076,
+  "runtime_s": 0.006199115014169365,
+  "params": {
+    "budget": "constraint",
+    "n_junctions": 92,
+    "p_cost": 0.5
+  },
+  "samples": [],
+  "sample_energies": [],
+  "time": "20261127-050313"
+}

@@ -1,0 +1,20 @@
+{
+  "network": "Net2",
+  "solver": "gurobi",
+  "formulation": "topological",
+  "k": 2,
+  "sensors": [
+    "11",
+    "14"
+  ],
+  "energy": 12.030275621366048,
+  "runtime_s": 0.013462821021676064,
+  "params": {
+    "budget": "constraint",
+    "n_junctions": 35,
+    "p_cost": 0.5
+  },
+  "samples": [],
+  "sample_energies": [],
+  "time": "20261127-050245"
+}

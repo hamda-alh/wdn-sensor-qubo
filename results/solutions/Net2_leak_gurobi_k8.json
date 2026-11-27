@@ -1,0 +1,26 @@
+{
+  "network": "Net2",
+  "solver": "gurobi",
+  "formulation": "leak",
+  "k": 8,
+  "sensors": [
+    "11",
+    "14",
+    "15",
+    "20",
+    "22",
+    "23",
+    "28",
+    "32"
+  ],
+  "energy": 3.479010925819436,
+  "runtime_s": 0.08760469901608303,
+  "params": {
+    "budget": "constraint",
+    "n_junctions": 35,
+    "cutoff_min": 30
+  },
+  "samples": [],
+  "sample_energies": [],
+  "time": "20261127-050301"
+}
