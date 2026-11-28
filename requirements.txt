@@ -3,8 +3,11 @@ networkx
 numpy
 pandas
 matplotlib
+scipy
 gurobipy
 dimod
 dwave-neal
 qiskit
+qiskit-algorithms
+qiskit-optimization
 six
