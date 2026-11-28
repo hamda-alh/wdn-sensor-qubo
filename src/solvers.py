@@ -11,7 +11,7 @@ import numpy as np
 #   x        best placement found, as a list of 0s and 1s
 #   energy   energy of x
 #   runtime  seconds
-#   samples  every placement the solver returned (only sa returns more than one)
+#   samples  every placement the solver returned (one per run for sa, one per shot for qaoa)
 
 
 def solve_gurobi(Q, const, k=None, time_limit=60):
@@ -55,6 +55,52 @@ def solve_sa(Q, const, num_reads=100, num_sweeps=1000, seed=0):
     samples = [[int(s[i]) for i in range(len(Q))] for s in result.samples()]
     best = [int(result.first.sample[i]) for i in range(len(Q))]
     return best, result.first.energy, runtime, samples
+
+
+def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42):
+    """
+    qaoa on a simulator (qiskit). needs one qubit per junction, so only for small networks.
+    reps = number of qaoa layers, maxiter = optimizer steps, shots = how many times the circuit is measured.
+    samples has one placement per shot.
+    """
+    # imported here so the other solvers still work without qiskit installed
+    from qiskit.primitives import StatevectorSampler
+    from qiskit_algorithms import QAOA
+    from qiskit_algorithms.optimizers import COBYLA
+    from qiskit_algorithms.utils import algorithm_globals
+    from qiskit_optimization import QuadraticProgram
+    from qiskit_optimization.algorithms import MinimumEigenOptimizer
+
+    N = len(Q)
+    if N > 20:
+        raise ValueError("too many junctions to simulate qaoa")
+
+    # write the qubo in the form qiskit wants
+    problem = QuadraticProgram()
+    for i in range(N):
+        problem.binary_var(name=f"x_{i}")
+    linear = {f"x_{i}": Q[i, i] for i in range(N)}
+    pairs = {(f"x_{i}", f"x_{j}"): Q[i, j] for i in range(N) for j in range(i + 1, N) if Q[i, j] != 0}
+    problem.minimize(constant=const, linear=linear, quadratic=pairs)
+
+    algorithm_globals.random_seed = seed       # same starting angles every time
+    sampler = StatevectorSampler(default_shots=shots, seed=seed)
+    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(maxiter=maxiter), reps=reps)
+
+    start = time.perf_counter()
+    result = MinimumEigenOptimizer(qaoa).solve(problem)
+    runtime = time.perf_counter() - start
+
+    # every measured bitstring and its share of the shots. qiskit writes qubit 0 last, so we reverse it
+    measured = result.min_eigen_solver_result.eigenstate
+    samples = []
+    for bits, share in measured.items():
+        x = [int(b) for b in reversed(bits)]
+        samples += [x] * round(share * shots)
+
+    energies = [np.array(x) @ Q @ np.array(x) + const for x in samples]
+    best = samples[int(np.argmin(energies))]
+    return best, min(energies), runtime, samples
 
 
 def solve_brute_force(Q, const):
