@@ -75,13 +75,17 @@ def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42):
     if N > 20:
         raise ValueError("too many junctions to simulate qaoa")
 
+    # qaoa works better when the numbers in Q are small, so we divide by the biggest one.
+    # this does not change which placement is best
+    scale = np.abs(Q).max()
+
     # write the qubo in the form qiskit wants
     problem = QuadraticProgram()
     for i in range(N):
         problem.binary_var(name=f"x_{i}")
-    linear = {f"x_{i}": Q[i, i] for i in range(N)}
-    pairs = {(f"x_{i}", f"x_{j}"): Q[i, j] for i in range(N) for j in range(i + 1, N) if Q[i, j] != 0}
-    problem.minimize(constant=const, linear=linear, quadratic=pairs)
+    linear = {f"x_{i}": Q[i, i] / scale for i in range(N)}
+    pairs = {(f"x_{i}", f"x_{j}"): Q[i, j] / scale for i in range(N) for j in range(i + 1, N) if Q[i, j] != 0}
+    problem.minimize(constant=const / scale, linear=linear, quadratic=pairs)
 
     algorithm_globals.random_seed = seed       # same starting angles every time
     sampler = StatevectorSampler(default_shots=shots, seed=seed)
@@ -98,6 +102,7 @@ def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42):
         x = [int(b) for b in reversed(bits)]
         samples += [x] * round(share * shots)
 
+    # energies with the original Q, so they compare with the other solvers
     energies = [np.array(x) @ Q @ np.array(x) + const for x in samples]
     best = samples[int(np.argmin(energies))]
     return best, min(energies), runtime, samples
