@@ -56,7 +56,7 @@ def run(network, formulation, k, run_qaoa=False):
         x, e, runtime, samples = solve_qaoa(Q, const, qaoa_reps, qaoa_maxiter, qaoa_shots)
         save_solution(network, "qaoa", formulation, k, to_sensors(x, nodes), e, runtime,
                       params={"penalty": penalty, "reps": qaoa_reps, "maxiter": qaoa_maxiter,
-                              "shots": qaoa_shots, **info},
+                              "shots": qaoa_shots, "rescaled": True, **info},
                       samples=[to_sensors(s, nodes) for s in samples],
                       sample_energies=[float(energy(Q, const, s)) for s in samples])
         print(f"{network} {formulation} k={k}  qaoa    energy={e:.4f}  time={runtime:.3f}s")
