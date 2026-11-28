@@ -135,17 +135,7 @@ Used only to score placements. The QUBOs are always built from the clean network
 
 Given on the command line. We used Net1: 1 to 5, Net2: 2, 4, 6, 8, 10, Net3: 2, 5, 10, 15, 20.
 
-## Main findings
 
-![Leak detection of each QUBO](results/figures/leak_detection.png)
-
-- **The leak QUBO detects more leaks** than the topological QUBO, most clearly with few sensors (Net2 with 4 sensors: 71% against 31%). With many sensors the difference disappears.
-- **The topological QUBO is about as good as random placement.** It puts sensors on the main pipes near the tank, where the pressure hardly changes.
-- **A low energy is a good sign only for the leak QUBO.** For the topological QUBO, energy says nothing about leak detection.
-- **The penalty has to be chosen with care.** Too small and solutions break the budget; too large and SA finds worse placements.
-- **SA becomes unreliable as the network grows.** It always finds the optimum on Net1, but only in 38% (topological) and 16% (leak) of trials on Net3.
-- **QAOA only runs on Net1.** After rescaling the QUBO it finds the optimum in all 10 problems, but one measurement is far less likely to be optimal than one SA run (about 2% against 25-40%).
-- **The QUBO matters more than the solver.** Placements from Gurobi, SA and QAOA detect almost the same number of leaks.
 
 ## Team and reference
 
