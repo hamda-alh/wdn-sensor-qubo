@@ -57,13 +57,34 @@ def solve_sa(Q, const, num_reads=100, num_sweeps=1000, seed=0):
     return best, result.first.energy, runtime, samples
 
 
-def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42):
+def dicke_state(n, k):
+    """equal superposition of every placement with exactly k sensors (the xy mixer's starting state)"""
+    from qiskit.circuit.library import StatePreparation
+    amps = np.zeros(2 ** n, dtype=complex)
+    idx = [sum(1 << i for i in chosen) for chosen in itertools.combinations(range(n), k)]
+    amps[idx] = 1 / np.sqrt(len(idx))
+    return StatePreparation(amps)
+
+
+def xy_mixer(n):
+    """ring xy mixer. it never changes the number of sensors, so every sample has exactly k"""
+    from qiskit.quantum_info import SparsePauliOp
+    pairs = [(0, 1)] if n == 2 else [(i, (i + 1) % n) for i in range(n)]
+    terms = []
+    for i, j in pairs:
+        terms += [("XX", [i, j], 0.5), ("YY", [i, j], 0.5)]
+    return SparsePauliOp.from_sparse_list(terms, num_qubits=n)
+
+
+def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42, mixer="x", k=None):
     """
     qaoa on a simulator (qiskit). needs one qubit per junction, so only for small networks.
     reps = number of qaoa layers, maxiter = optimizer steps, shots = how many times the circuit is measured.
+    mixer = "x" (standard) or "xy" (keeps exactly k sensors, starts from a Dicke state, needs k).
     samples has one placement per shot.
     """
     # imported here so the other solvers still work without qiskit installed
+    from qiskit import QuantumCircuit
     from qiskit.primitives import StatevectorSampler
     from qiskit_algorithms import QAOA
     from qiskit_algorithms.optimizers import COBYLA
@@ -89,7 +110,20 @@ def solve_qaoa(Q, const, reps=1, maxiter=30, shots=512, seed=42):
 
     algorithm_globals.random_seed = seed       # same starting angles every time
     sampler = StatevectorSampler(default_shots=shots, seed=seed)
-    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(maxiter=maxiter), reps=reps)
+
+    if mixer == "xy":
+        if k is None:
+            raise ValueError("the xy mixer needs k for the starting state")
+        mixer_op = xy_mixer(N)
+        initial_state = QuantumCircuit(N)
+        initial_state.append(dicke_state(N, k), range(N))
+    elif mixer == "x":
+        mixer_op, initial_state = None, None   # qiskit defaults: X mixer, all-plus start
+    else:
+        raise ValueError("mixer must be 'x' or 'xy'")
+
+    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(maxiter=maxiter), reps=reps,
+                mixer=mixer_op, initial_state=initial_state)
 
     start = time.perf_counter()
     result = MinimumEigenOptimizer(qaoa).solve(problem)
